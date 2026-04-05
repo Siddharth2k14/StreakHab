@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardContent, FormControl, FormLabel, Input, Link, Typography } from "@mui/joy";
+import { Box, Button, Card, CardContent, FormControl, FormLabel, Input, Link, Typography } from "@mui/material";
 import React from "react";
 import styles from "../../styles/Register/register.module.css";
 

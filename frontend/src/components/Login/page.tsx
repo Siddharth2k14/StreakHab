@@ -1,13 +1,5 @@
 import React from "react";
-import CardContent from "@mui/joy/CardContent";
-import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
-import Input from "@mui/joy/Input";
-import Button from "@mui/joy/Button";
-import Typography from "@mui/joy/Typography";
-import Link from "@mui/joy/Link";
-import Box from "@mui/joy/Box";
-import Card from "@mui/joy/Card";
+import { Box, Button, Card, CardContent, FormControl, FormLabel, Input, Link, Typography } from "@mui/material";
 
 import styles from "../../styles/Login/login.module.css";
 

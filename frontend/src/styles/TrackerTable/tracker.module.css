@@ -1,0 +1,45 @@
+.container {
+  padding: 20px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+
+.sticky {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 2;
+}
+
+.taskCell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menuBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.addBtn {
+  margin-top: 10px;
+}
+
+.input {
+  color: black;
+}
