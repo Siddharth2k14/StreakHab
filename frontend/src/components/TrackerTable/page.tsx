@@ -2,6 +2,11 @@ import { Box, Button, Checkbox, IconButton, Table, TableBody, TableCell, TableCo
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import styles from "../../styles/TrackerTable/tracker.module.css";
 import React from "react";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { selectAllTasks, selectEditedTitle, selectEditingTaskId, selectTaskLoading } from "../../store/selectors/taskSelectors";
+import { removeTaskEntries, toggleEntryLocal } from "../../store/slices/entriesSlice";
+import { addTaskLocal, clearEditing, deleteTaskLocal, setEditedTitle, setEditingTaskId, updateTaskLocal } from "../../store/slices/tasksSlice";
+import { selectEntriesByKey } from "../../store/selectors/entrySelectors";
 
 const generateLast14Days = () => {
     const days = [];
@@ -24,33 +29,28 @@ const generateLast14Days = () => {
 }
 
 export default function TrackerTable() {
-    const [tasks, setTasks] = React.useState([
-        {
-            id: 1,
-            title: "Demo Task"
-        },
-    ]);
+    const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+    const [selectedTaskId, setSelectedTaskId] = React.useState<number | null>(null);
 
-    const [entries, setEntries] = React.useState({});
-    const [anchorEl, setAnchorEl] = React.useState(null);
-    const [selectedTaskId, setSelectedTaskId] = React.useState(null);
-    const [editingTaskId, setEditingTaskId] = React.useState(null);
-    const [editedTitle, setEditedTitle] = React.useState("");
+    const dispatch = useAppDispatch();
+    const tasks = useAppSelector(selectAllTasks);
+    const loading = useAppSelector(selectTaskLoading);
+    const editingTaskId = useAppSelector(selectEditingTaskId);
+    const editedTitle = useAppSelector(selectEditedTitle);
 
     const days = generateLast14Days();
     const open = Boolean(anchorEl);
 
     // Toggle checkbox
-    const toggleEntry = (taskId, date) => {
-        const key = `${taskId}-${date}`;
-
-        setEntries((prev) => ({
-            ...prev,
-            [key]: !prev[key],
+    const toggleEntry = (taskId: number, date: string, currentValue: boolean) => {
+        dispatch(toggleEntryLocal({
+            taskId,
+            date,
+            completed: !currentValue,
         }));
     };
 
-    const handleMenuOpen = (event, taskId) => {
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, taskId: number) => {
         setAnchorEl(event.currentTarget);
         setSelectedTaskId(taskId);
     };
@@ -63,72 +63,84 @@ export default function TrackerTable() {
     // Add new task
     const addTask = () => {
         const title = prompt("Enter task name");
-        if (!title) return;
+        if (!title?.trim()) return;
 
-        setTasks((prev) => [
-            ...prev,
-            { id: Date.now(), title },
-        ]);
+        dispatch(addTaskLocal({
+            id: Date.now(),
+            title: title.trim(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        }));
     };
 
     // Delete task
-    const deleteTask = (taskId) => {
-        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    const deleteTask = (taskId: number) => {
+        dispatch(deleteTaskLocal(taskId));
+        dispatch(removeTaskEntries(taskId));
     };
 
-    const editTask = (taskId) => {
-        const currentTask = tasks.find((t) => t.id === taskId);
-
-        setEditingTaskId(taskId);
-        setEditedTitle(currentTask.title);
+    const editTask = (taskId: number) => {
+        dispatch(setEditingTaskId(taskId));
     };
 
     const saveTask = () => {
-        if (!editedTitle.trim()) return;
+        if (!editedTitle.trim() || editingTaskId === null) return;
 
-        setTasks((prev) =>
-            prev.map((task) =>
-                task.id === editingTaskId
-                    ? { ...task, title: editedTitle }
-                    : task
-            )
-        );
+        dispatch(updateTaskLocal({
+            id: editingTaskId,
+            title: editedTitle.trim(),
+        }));
 
-        setEditingTaskId(null);
-        setEditedTitle("");
+        dispatch(clearEditing());
     };
+
+    const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") saveTask();
+        if (e.key === "Escape") dispatch(clearEditing());
+    };
+
+
+    if (loading) return <Box sx={{ color: "white" }}>Loading...</Box>;
 
     return (
         <Box className={styles.container}>
             <TableContainer className={styles.tableWrapper}>
                 <Table className={styles.table}>
+
+                    {/* ── Head ── */}
                     <TableHead>
                         <TableRow>
                             <TableCell className={styles.sticky}>Task</TableCell>
                             {days.map((day) => (
-                                <TableCell key={day.formatted} sx={{ color: "white" }}>{day.label}</TableCell>
+                                <TableCell key={day.formatted} sx={{ color: "white" }}>
+                                    {day.label}
+                                </TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
 
+                    {/* ── Body ── */}
                     <TableBody>
                         {tasks.map((task) => (
                             <TableRow key={task.id}>
+
+                                {/* ── Task Name Cell ── */}
                                 <TableCell className={styles.sticky}>
                                     <Box className={styles.taskCell}>
                                         {editingTaskId === task.id ? (
                                             <input
                                                 value={editedTitle}
-                                                onChange={(e) => setEditedTitle(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") saveTask();
-                                                }}
+                                                onChange={(e) =>
+                                                    dispatch(setEditedTitle(e.target.value))
+                                                }
+                                                onKeyDown={handleEditKeyDown}
                                                 autoFocus
                                                 className={styles.input}
                                             />
                                         ) : (
                                             task.title
                                         )}
+
                                         <IconButton
                                             onClick={(e) => handleMenuOpen(e, task.id)}
                                             className={styles.menuBtn}
@@ -138,39 +150,28 @@ export default function TrackerTable() {
                                     </Box>
                                 </TableCell>
 
-                                {days.map((day) => {
-                                    const key = `${task.id}-${day.formatted}`;
-                                    const checked = entries[key] || false;
+                                {/* ── Checkbox Cells ── */}
+                                {days.map((day) => (
+                                    <CheckboxCell
+                                        key={day.formatted}
+                                        taskId={task.id}
+                                        date={day.formatted}
+                                        onToggle={toggleEntry}
+                                    />
+                                ))}
 
-                                    return (
-                                        <TableCell key={day.formatted}>
-                                            <Checkbox
-                                                checked={checked}
-                                                onChange={() => toggleEntry(task.id, day.formatted)}
-                                                sx={{
-                                                    color: "white", // unchecked color
-                                                    "&.Mui-checked": {
-                                                        color: "white", // checked color
-                                                    },
-                                                }}
-                                            />
-                                        </TableCell>
-                                    );
-                                })}
                             </TableRow>
                         ))}
                     </TableBody>
+
                 </Table>
             </TableContainer>
 
-            <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleMenuClose}
-            >
+            {/* ── Context Menu ── */}
+            <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
                 <MenuItem
                     onClick={() => {
-                        editTask(selectedTaskId);
+                        if (selectedTaskId !== null) editTask(selectedTaskId);
                         handleMenuClose();
                     }}
                 >
@@ -179,7 +180,7 @@ export default function TrackerTable() {
 
                 <MenuItem
                     onClick={() => {
-                        deleteTask(selectedTaskId);
+                        if (selectedTaskId !== null) deleteTask(selectedTaskId);
                         handleMenuClose();
                     }}
                 >
@@ -187,10 +188,38 @@ export default function TrackerTable() {
                 </MenuItem>
             </Menu>
 
-            <Button
-                onClick={addTask}
-                className={styles.addBtn}
-            >+ Add Task</Button>
+            {/* ── Add Task Button ── */}
+            <Button onClick={addTask} className={styles.addBtn}>
+                + Add Task
+            </Button>
         </Box>
     );
-};
+}
+
+// ─────────────────────────────────────────────
+// CheckboxCell — isolated to safely call
+// useAppSelector per cell inside the loop
+// ─────────────────────────────────────────────
+
+interface CheckboxCellProps {
+    taskId: number;
+    date: string;
+    onToggle: (taskId: number, date: string, currentValue: boolean) => void;
+}
+
+function CheckboxCell({ taskId, date, onToggle }: CheckboxCellProps) {
+    const checked = useAppSelector(selectEntriesByKey(taskId, date));
+
+    return (
+        <TableCell>
+            <Checkbox
+                checked={checked}
+                onChange={() => onToggle(taskId, date, checked)}
+                sx={{
+                    color: "white",
+                    "&.Mui-checked": { color: "white" },
+                }}
+            />
+        </TableCell>
+    );
+}

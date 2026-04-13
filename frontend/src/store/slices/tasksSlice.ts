@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { TaskState, Task } from "../../types/tracker.types";
+import { createSlice } from "@reduxjs/toolkit"
+import { type Task, type TaskState } from "../../types/tracker.types.ts";
+import type { PayloadAction } from "@reduxjs/toolkit";
 
 const initialState: TaskState = {
     tasks: [],
