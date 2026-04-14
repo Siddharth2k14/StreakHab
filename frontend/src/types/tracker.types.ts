@@ -2,19 +2,19 @@
  * Represents a Single task in the tracker
  */
 export interface Task {
-    id: Number;
-    title: String;
-    createdAt: String;
-    updatedAt: String;
+    id: number;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 /**
  * Represents a single daily entry (checkbox state) for a task on a specific date.
  */
 export interface Entry {
-    taskId: Number;
-    date: String;
-    completed: Boolean;
+    taskId: number;
+    date: string;
+    completed: boolean;
 }
 
 export type EntriesMap = Record<string, boolean>;
@@ -24,10 +24,10 @@ export type EntriesMap = Record<string, boolean>;
  */
 export interface TaskState {
     tasks: Task[];
-    loading: Boolean;
-    error: String | null;
-    editingTaskId: Number | null;
-    editedTitle: String;
+    loading: boolean;
+    error: string | null;
+    editingTaskId: number | null;
+    editedTitle: string;
 }
 
 /**

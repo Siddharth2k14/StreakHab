@@ -7,6 +7,8 @@ import { selectAllTasks, selectEditedTitle, selectEditingTaskId, selectTaskLoadi
 import { removeTaskEntries, toggleEntryLocal } from "../../store/slices/entriesSlice";
 import { addTaskLocal, clearEditing, deleteTaskLocal, setEditedTitle, setEditingTaskId, updateTaskLocal } from "../../store/slices/tasksSlice";
 import { selectEntriesByKey } from "../../store/selectors/entrySelectors";
+import { getCurrentStreak } from "../../utils/streak-system/currentStreak";
+import { getLongestStreak } from "../../utils/streak-system/longestStreak";
 
 const generateLast14Days = () => {
     const days = [];
@@ -33,13 +35,14 @@ export default function TrackerTable() {
     const [selectedTaskId, setSelectedTaskId] = React.useState<number | null>(null);
 
     const dispatch = useAppDispatch();
-    const tasks = useAppSelector(selectAllTasks);
+    const tasks = useAppSelector(selectAllTasks) ?? [];
     const loading = useAppSelector(selectTaskLoading);
     const editingTaskId = useAppSelector(selectEditingTaskId);
     const editedTitle = useAppSelector(selectEditedTitle);
 
     const days = generateLast14Days();
     const open = Boolean(anchorEl);
+    const entries = useAppSelector((state) => state.entries.entries);
 
     // Toggle checkbox
     const toggleEntry = (taskId: number, date: string, currentValue: boolean) => {
@@ -111,10 +114,16 @@ export default function TrackerTable() {
                     <TableHead>
                         <TableRow>
                             <TableCell className={styles.sticky}>Task</TableCell>
+                            <TableCell align="center"
+                                sx={{
+                                    color: "white",
+                                    fontSize: "14px"
+                                }}>🔥 Streak</TableCell>
+                            <TableCell align="center" sx={{ color: "white", fontSize: "14px" }}>🏆 Best</TableCell>
                             {days.map((day) => (
-                                <TableCell key={day.formatted} sx={{ color: "white" }}>
-                                    {day.label}
-                                </TableCell>
+                                <TableCell sx={{
+                                    color: "white",
+                                }} key={day.formatted}>{day.label}</TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
@@ -123,7 +132,6 @@ export default function TrackerTable() {
                     <TableBody>
                         {tasks.map((task) => (
                             <TableRow key={task.id}>
-
                                 {/* ── Task Name Cell ── */}
                                 <TableCell className={styles.sticky}>
                                     <Box className={styles.taskCell}>
@@ -150,6 +158,16 @@ export default function TrackerTable() {
                                     </Box>
                                 </TableCell>
 
+                                <TableCell sx={{
+                                    color: "white",
+                                }}>🔥 {getCurrentStreak(task.id, entries)}</TableCell>
+                                <TableCell sx={{
+                                    color: "white",
+                                    margin: "2px",
+                                    padding: "2px",
+                                    textAlign: "center",
+                                }}>🏆 {getLongestStreak(task.id, entries)}</TableCell>
+
                                 {/* ── Checkbox Cells ── */}
                                 {days.map((day) => (
                                     <CheckboxCell
@@ -159,7 +177,6 @@ export default function TrackerTable() {
                                         onToggle={toggleEntry}
                                     />
                                 ))}
-
                             </TableRow>
                         ))}
                     </TableBody>
