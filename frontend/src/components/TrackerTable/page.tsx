@@ -10,29 +10,30 @@ import { selectEntriesByKey } from "../../store/selectors/entrySelectors";
 import { getCurrentStreak } from "../../utils/streak-system/currentStreak";
 import { getLongestStreak } from "../../utils/streak-system/longestStreak";
 
-const generateLast14Days = () => {
+const generateDaysForMonth = (year: number, month: number) => {
     const days = [];
     const today = new Date();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+    const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
 
-    for (let i = 13; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(today.getDate() - i);
-
+    for (let d = 1; d <= lastDay; d++) {
+        const date = new Date(year, month, d);
         const formatted = date.toISOString().split("T")[0];
-        const label = date.toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-        });
-
-        days.push({ formatted, label })
+        const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+        days.push({ formatted, label });
     }
 
     return days;
-}
+};
 
 export default function TrackerTable() {
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const [selectedTaskId, setSelectedTaskId] = React.useState<number | null>(null);
+
+    const today = new Date();
+    const [selectedYear, setSelectedYear] = React.useState(today.getFullYear());
+    const [selectedMonth, setSelectedMonth] = React.useState(today.getMonth());
 
     const dispatch = useAppDispatch();
     const tasks = useAppSelector(selectAllTasks) ?? [];
@@ -40,9 +41,17 @@ export default function TrackerTable() {
     const editingTaskId = useAppSelector(selectEditingTaskId);
     const editedTitle = useAppSelector(selectEditedTitle);
 
-    const days = generateLast14Days();
+    const days = generateDaysForMonth(selectedYear, selectedMonth);
     const open = Boolean(anchorEl);
     const entries = useAppSelector((state) => state.entries.entries);
+
+    const monthValue = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+
+    const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const [y, m] = e.target.value.split("-").map(Number);
+        setSelectedYear(y);
+        setSelectedMonth(m - 1);
+    };
 
     // Toggle checkbox
     const toggleEntry = (taskId: number, date: string, currentValue: boolean) => {
@@ -107,6 +116,16 @@ export default function TrackerTable() {
 
     return (
         <Box className={styles.container}>
+            {/* ── Month Filter ── */}
+            <Box className={styles.filterBar}>
+                <input
+                    type="month"
+                    value={monthValue}
+                    onChange={handleMonthChange}
+                    className={styles.monthPicker}
+                />
+            </Box>
+
             <TableContainer className={styles.tableWrapper}>
                 <Table className={styles.table}>
 
