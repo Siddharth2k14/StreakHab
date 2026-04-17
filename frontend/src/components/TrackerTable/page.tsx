@@ -1,118 +1,47 @@
 import { Box, Button, Checkbox, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Menu, MenuItem } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import styles from "../../styles/TrackerTable/tracker.module.css";
-import React from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { selectAllTasks, selectEditedTitle, selectEditingTaskId, selectTaskLoading } from "../../store/selectors/taskSelectors";
-import { removeTaskEntries, toggleEntryLocal } from "../../store/slices/entriesSlice";
-import { addTaskLocal, clearEditing, deleteTaskLocal, setEditedTitle, setEditingTaskId, updateTaskLocal } from "../../store/slices/tasksSlice";
+
 import { selectEntriesByKey } from "../../store/selectors/entrySelectors";
+import { setEditedTitle } from "../../store/slices/tasksSlice";
 import { getCurrentStreak } from "../../utils/streak-system/currentStreak";
 import { getLongestStreak } from "../../utils/streak-system/longestStreak";
+import type { EntriesMap, Task } from "../../types/tracker.types";
 
-const generateDaysForMonth = (year: number, month: number) => {
-    const days = [];
-    const today = new Date();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
-    const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
+interface MethodPropss {
+    handleMonthChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    handleEditKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+    handleMenuOpen: (event: React.MouseEvent<HTMLElement>, taskId: number) => void;
+    handleMenuClose: () => void;
+    toggleEntry: ( taskId: number, date: string, currentValue: boolean ) => void;
+    addTask: () => void;
+    deleteTask: (taskId: number) => void;
+    editTask: (taskId: number) => void;
+}
 
-    for (let d = 1; d <= lastDay; d++) {
-        const date = new Date(year, month, d);
-        const formatted = date.toISOString().split("T")[0];
-        const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-        days.push({ formatted, label });
-    }
+interface StateProps {
+    anchorEl: HTMLElement | null;
+    selectedTaskId: number | null;
+}
 
-    return days;
-};
+interface VariableProps {
+    monthValue: string;
+    days: Array<{ formatted: string; label: string }>;
+    tasks: Task[];
+    editingTaskId: number | null;
+    editedTitle: string;
+    entries: EntriesMap;
+}
 
-export default function TrackerTable() {
-    const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
-    const [selectedTaskId, setSelectedTaskId] = React.useState<number | null>(null);
+interface TrackerTablePropa {
+    methods: MethodPropss;
+    states: StateProps;
+    variable: VariableProps;
+}
 
-    const today = new Date();
-    const [selectedYear, setSelectedYear] = React.useState(today.getFullYear());
-    const [selectedMonth, setSelectedMonth] = React.useState(today.getMonth());
-
+export default function TrackerTable({ methods, states, variable }: TrackerTablePropa) {
     const dispatch = useAppDispatch();
-    const tasks = useAppSelector(selectAllTasks) ?? [];
-    const loading = useAppSelector(selectTaskLoading);
-    const editingTaskId = useAppSelector(selectEditingTaskId);
-    const editedTitle = useAppSelector(selectEditedTitle);
-
-    const days = generateDaysForMonth(selectedYear, selectedMonth);
-    const open = Boolean(anchorEl);
-    const entries = useAppSelector((state) => state.entries.entries);
-
-    const monthValue = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-
-    const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const [y, m] = e.target.value.split("-").map(Number);
-        setSelectedYear(y);
-        setSelectedMonth(m - 1);
-    };
-
-    // Toggle checkbox
-    const toggleEntry = (taskId: number, date: string, currentValue: boolean) => {
-        dispatch(toggleEntryLocal({
-            taskId,
-            date,
-            completed: !currentValue,
-        }));
-    };
-
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, taskId: number) => {
-        setAnchorEl(event.currentTarget);
-        setSelectedTaskId(taskId);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-        setSelectedTaskId(null);
-    };
-
-    // Add new task
-    const addTask = () => {
-        const title = prompt("Enter task name");
-        if (!title?.trim()) return;
-
-        dispatch(addTaskLocal({
-            id: Date.now(),
-            title: title.trim(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        }));
-    };
-
-    // Delete task
-    const deleteTask = (taskId: number) => {
-        dispatch(deleteTaskLocal(taskId));
-        dispatch(removeTaskEntries(taskId));
-    };
-
-    const editTask = (taskId: number) => {
-        dispatch(setEditingTaskId(taskId));
-    };
-
-    const saveTask = () => {
-        if (!editedTitle.trim() || editingTaskId === null) return;
-
-        dispatch(updateTaskLocal({
-            id: editingTaskId,
-            title: editedTitle.trim(),
-        }));
-
-        dispatch(clearEditing());
-    };
-
-    const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") saveTask();
-        if (e.key === "Escape") dispatch(clearEditing());
-    };
-
-
-    if (loading) return <Box sx={{ color: "white" }}>Loading...</Box>;
 
     return (
         <Box className={styles.container}>
@@ -120,8 +49,8 @@ export default function TrackerTable() {
             <Box className={styles.filterBar}>
                 <input
                     type="month"
-                    value={monthValue}
-                    onChange={handleMonthChange}
+                    value={variable.monthValue}
+                    onChange={methods.handleMonthChange}
                     className={styles.monthPicker}
                 />
             </Box>
@@ -139,7 +68,7 @@ export default function TrackerTable() {
                                     fontSize: "14px"
                                 }}>🔥 Streak</TableCell>
                             <TableCell align="center" sx={{ color: "white", fontSize: "14px" }}>🏆 Best</TableCell>
-                            {days.map((day) => (
+                            {variable.days.map((day) => (
                                 <TableCell sx={{
                                     color: "white",
                                 }} key={day.formatted}>{day.label}</TableCell>
@@ -149,18 +78,18 @@ export default function TrackerTable() {
 
                     {/* ── Body ── */}
                     <TableBody>
-                        {tasks.map((task) => (
+                        {variable.tasks.map((task) => (
                             <TableRow key={task.id}>
                                 {/* ── Task Name Cell ── */}
                                 <TableCell className={styles.sticky}>
                                     <Box className={styles.taskCell}>
-                                        {editingTaskId === task.id ? (
+                                        {variable.editingTaskId === task.id ? (
                                             <input
-                                                value={editedTitle}
+                                                value={variable.editedTitle}
                                                 onChange={(e) =>
                                                     dispatch(setEditedTitle(e.target.value))
                                                 }
-                                                onKeyDown={handleEditKeyDown}
+                                                onKeyDown={methods.handleEditKeyDown}
                                                 autoFocus
                                                 className={styles.input}
                                             />
@@ -169,7 +98,7 @@ export default function TrackerTable() {
                                         )}
 
                                         <IconButton
-                                            onClick={(e) => handleMenuOpen(e, task.id)}
+                                            onClick={(e) => methods.handleMenuOpen(e, task.id)}
                                             className={styles.menuBtn}
                                         >
                                             <MoreVertIcon />
@@ -179,21 +108,21 @@ export default function TrackerTable() {
 
                                 <TableCell sx={{
                                     color: "white",
-                                }}>🔥 {getCurrentStreak(task.id, entries)}</TableCell>
+                                }}>🔥 {getCurrentStreak(task.id, variable.entries)}</TableCell>
                                 <TableCell sx={{
                                     color: "white",
                                     margin: "2px",
                                     padding: "2px",
                                     textAlign: "center",
-                                }}>🏆 {getLongestStreak(task.id, entries)}</TableCell>
+                                }}>🏆 {getLongestStreak(task.id, variable.entries)}</TableCell>
 
                                 {/* ── Checkbox Cells ── */}
-                                {days.map((day) => (
+                                {variable.days.map((day) => (
                                     <CheckboxCell
                                         key={day.formatted}
                                         taskId={task.id}
                                         date={day.formatted}
-                                        onToggle={toggleEntry}
+                                        onToggle={methods.toggleEntry}
                                     />
                                 ))}
                             </TableRow>
@@ -204,11 +133,11 @@ export default function TrackerTable() {
             </TableContainer>
 
             {/* ── Context Menu ── */}
-            <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
+            <Menu anchorEl={states.anchorEl} open={Boolean(states.anchorEl)} onClose={methods.handleMenuClose}>
                 <MenuItem
                     onClick={() => {
-                        if (selectedTaskId !== null) editTask(selectedTaskId);
-                        handleMenuClose();
+                        if (states.selectedTaskId !== null) methods.editTask(states.selectedTaskId);
+                        methods.handleMenuClose();
                     }}
                 >
                     Edit
@@ -216,8 +145,8 @@ export default function TrackerTable() {
 
                 <MenuItem
                     onClick={() => {
-                        if (selectedTaskId !== null) deleteTask(selectedTaskId);
-                        handleMenuClose();
+                        if (states.selectedTaskId !== null) methods.deleteTask(states.selectedTaskId);
+                        methods.handleMenuClose();
                     }}
                 >
                     Delete
@@ -225,7 +154,7 @@ export default function TrackerTable() {
             </Menu>
 
             {/* ── Add Task Button ── */}
-            <Button onClick={addTask} className={styles.addBtn}>
+            <Button onClick={methods.addTask} className={styles.addBtn}>
                 + Add Task
             </Button>
         </Box>
