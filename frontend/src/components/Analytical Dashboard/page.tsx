@@ -3,7 +3,6 @@ import React from "react";
 import HeatMap from "./HeatMap/page.tsx";
 import { useAppSelector } from "../../store/hooks.ts";
 import { selectAllTasks } from "../../store/selectors/taskSelectors.ts";
-import type { Task } from "../../types/tracker.types.ts";
 
 interface AnalyticalDashProps {
     days: Array<{ formatted: string; label: string }>;
@@ -67,8 +66,8 @@ export default function AnalyticalDash({ days }: AnalyticalDashProps) {
                     <Typography variant="h6">{selectedView}</Typography>
                 )}
 
-                {selectedView === "HeatMap" && selectedTaskId !== null && (
-                    <HeatMap taskId={selectedTaskId} days={days} />
+                {selectedView === "HeatMap" && (
+                    <HeatMap days={days} />
                 )}
             </Box>
         </Box>

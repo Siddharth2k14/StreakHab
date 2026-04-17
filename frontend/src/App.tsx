@@ -6,6 +6,7 @@
 import "./App.css"
 import AnalyticalDash from "./components/Analytical Dashboard/page"
 import TrackerTable from './components/TrackerTable/page'
+import TrackerPage from "./pages/TrackerPage/TrackerPage"
 
 function App() {
   return (
@@ -22,8 +23,7 @@ function App() {
     // </Routes>
 
     <div>
-      {/* <TrackerTable /> */}
-      <AnalyticalDash />
+      <TrackerPage />
     </div>
   )
 }
