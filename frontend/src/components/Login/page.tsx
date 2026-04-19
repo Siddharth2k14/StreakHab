@@ -1,9 +1,12 @@
 import React from "react";
-import { Box, Button, Card, CardContent, FormControl, FormLabel, Input, Link, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, FormControl, FormLabel, IconButton, Input, Link, Typography } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import styles from "../../styles/Login/login.module.css";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { loginUser } from "../../store/slices/authSlice";
 import { selectAuthLoading, selectAuthError } from "../../store/selectors/authSelectors";
+import { useNavigate } from "react-router-dom";
+import AnimatedBackground from "../AnimatedBackground/AnimatedBackground";
 
 const labelSx = { color: "#ccc", fontWeight: 600, mb: "4px", mt: "8px", fontSize: 13 };
 
@@ -17,6 +20,8 @@ export default function LoginPage() {
 
     const error = localError || serverError;
 
+    const navigate = useNavigate();
+
     const handleLogin = () => {
         if (!user.email || !user.password) {
             setLocalError("Please fill all fields");
@@ -28,11 +33,20 @@ export default function LoginPage() {
 
     return (
         <Box className={styles["main-box"]}>
+            <AnimatedBackground />
             <Card className={styles["main-card"]}>
                 <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h5" sx={{ color: "white", fontWeight: 700, mb: 3, textAlign: "center" }}>
-                        Welcome back
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                        <IconButton
+                            onClick={() => navigate(-1)}
+                            sx={{ color: "#aaa", "&:hover": { color: "#7c6af7" } }}
+                        >
+                            <ArrowBackIcon />
+                        </IconButton>
+                        <Typography variant="h5" sx={{ color: "white", fontWeight: 700, flex: 1, textAlign: "center", pr: "40px" }}>
+                            Welcome back
+                        </Typography>
+                    </Box>
 
                     <FormControl fullWidth>
                         <FormLabel sx={labelSx}>Email</FormLabel>

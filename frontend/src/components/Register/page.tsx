@@ -1,9 +1,12 @@
-import { Box, Button, Card, CardContent, FormControl, FormLabel, Input, Link, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, FormControl, FormLabel, IconButton, Input, Link, Typography } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import React from "react";
 import styles from "../../styles/Register/register.module.css";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { registerUser } from "../../store/slices/authSlice";
 import { selectAuthLoading, selectAuthError } from "../../store/selectors/authSelectors";
+import { useNavigate } from "react-router-dom";
+import AnimatedBackground from "../AnimatedBackground/AnimatedBackground";
 
 const labelSx = { color: "#ccc", fontWeight: 600, mb: "4px", mt: "8px", fontSize: 13 };
 
@@ -16,6 +19,8 @@ export default function RegisterPage() {
     const [localError, setLocalError] = React.useState("");
 
     const error = localError || serverError;
+
+    const navigate = useNavigate();
 
     const handleRegister = () => {
         if (!user.name || !user.email || !user.password || !user.confirmPassword) {
@@ -32,11 +37,20 @@ export default function RegisterPage() {
 
     return (
         <Box className={styles["main-box"]}>
+            <AnimatedBackground />
             <Card className={styles["main-card"]}>
                 <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h5" sx={{ color: "white", fontWeight: 700, mb: 3, textAlign: "center" }}>
-                        Create account
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                        <IconButton
+                            onClick={() => navigate(-1)}
+                            sx={{ color: "#aaa", "&:hover": { color: "#7c6af7" } }}
+                        >
+                            <ArrowBackIcon />
+                        </IconButton>
+                        <Typography variant="h5" sx={{ color: "white", fontWeight: 700, flex: 1, textAlign: "center", pr: "40px" }}>
+                            Create account
+                        </Typography>
+                    </Box>
 
                     <FormControl fullWidth>
                         <FormLabel sx={labelSx}>Name</FormLabel>

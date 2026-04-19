@@ -1,0 +1,32 @@
+.bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(135deg, #0d0d0d, #121212, #1a1a2e);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Cursor glow */
+.cursor {
+    position: fixed;
+    top: -15px;
+    left: -15px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #a78bfa 20%, rgba(124,106,247,0.6) 55%, transparent 75%);
+    pointer-events: none;
+    z-index: 2;
+    will-change: transform;
+    transition: transform 0.06s ease-out;
+    mix-blend-mode: screen;
+}
+
+/* Subtle dot-grid overlay */
+.grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
