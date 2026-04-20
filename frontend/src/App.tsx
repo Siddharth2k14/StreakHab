@@ -9,13 +9,13 @@ import HomePage from './pages/HomePage/HomePage'
 
 function App() {
   return (
-    // <Routes>
-    //   <Route path='/' element={<HomePage />} />
-    //   <Route path='/auth' element={<AuthPage />}>
-    //     <Route path='login' element={<LoginPage />} />
-    //     <Route path='register' element={<RegisterPage />} />
-    //   </Route>
-    // </Routes>
+    <Routes>
+      <Route path='/' element={<HomePage />} />
+      <Route path='/auth' element={<AuthPage />}>
+        <Route path='login' element={<LoginPage />} />
+        <Route path='register' element={<RegisterPage />} />
+      </Route>
+    </Routes>
 
     // <div>
     //   <HomePage />
