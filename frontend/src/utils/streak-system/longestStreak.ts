@@ -1,4 +1,4 @@
-export const getLongestStreak = (taskId: number, entries: any) => {
+export const getLongestStreak = (taskId: number | null, entries: any) => {
   let max = 0;
   let current = 0;
 

@@ -11,12 +11,20 @@ export default function TrackerPage() {
     const today = new Date();
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const [selectedTaskId, setSelectedTaskId] = React.useState<number | null>(null);
+    const [analyticsTaskId, setAnalyticsTaskId] = React.useState<number | null>(null);
     const [selectedYear, setSelectedYear] = React.useState(today.getFullYear());
     const [selectedMonth, setSelectedMonth] = React.useState(today.getMonth());
 
     const dispatch = useAppDispatch();
     const tasks = useAppSelector(selectAllTasks) ?? [];
     const loading = useAppSelector(selectTaskLoading);
+
+    // Default to first task for analytics
+    React.useEffect(() => {
+        if (tasks.length > 0 && analyticsTaskId === null) {
+            setAnalyticsTaskId(tasks[0].id);
+        }
+    }, [tasks]);
     const editingTaskId = useAppSelector(selectEditingTaskId);
     const editedTitle = useAppSelector(selectEditedTitle);
 
@@ -30,8 +38,11 @@ export default function TrackerPage() {
         const lastDay = isCurrentMonth ? today.getDate() : daysInMonth;
 
         for (let d = 1; d <= lastDay; d++) {
+            const yyyy = year;
+            const mm = String(month + 1).padStart(2, "0");
+            const dd = String(d).padStart(2, "0");
+            const formatted = `${yyyy}-${mm}-${dd}`;
             const date = new Date(year, month, d);
-            const formatted = date.toISOString().split("T")[0];
             const label = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
             days.push({ formatted, label });
         }
@@ -113,11 +124,11 @@ export default function TrackerPage() {
     return (
         <Box>
             <TrackerTable 
-                methods = {{ handleMonthChange, handleEditKeyDown, handleMenuOpen, handleMenuClose, toggleEntry, addTask, deleteTask, editTask }}
+                methods = {{ handleMonthChange, handleEditKeyDown, handleMenuOpen, handleMenuClose, toggleEntry, addTask, deleteTask, editTask, onTaskClick: setAnalyticsTaskId }}
                 states = {{ anchorEl, selectedTaskId }}
                 variable = {{ monthValue, days, tasks, editingTaskId, editedTitle, entries }}
             />
-            <AnalyticalDash days={days} />
+            <AnalyticalDash days={days} selectedTaskId={analyticsTaskId} />
         </Box>
     )
 }

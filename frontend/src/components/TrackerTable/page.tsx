@@ -18,6 +18,7 @@ interface MethodPropss {
     addTask: () => void;
     deleteTask: (taskId: number) => void;
     editTask: (taskId: number) => void;
+    onTaskClick: (taskId: number) => void;
 }
 
 interface StateProps {
@@ -94,7 +95,13 @@ export default function TrackerTable({ methods, states, variable }: TrackerTable
                                                 className={styles.input}
                                             />
                                         ) : (
-                                            task.title
+                                            <Box
+                                                component="span"
+                                                onClick={() => methods.onTaskClick(task.id)}
+                                                sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline", opacity: 0.8 } }}
+                                            >
+                                                {task.title}
+                                            </Box>
                                         )}
 
                                         <IconButton
