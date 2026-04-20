@@ -24,7 +24,7 @@ export default function HomePage() {
                 className={styles.title}
                 sx={{ color: "white", fontWeight: 700, textAlign: "center" }}
             >
-                Welcome to StreakGrid
+                Welcome to StreakHab
             </Typography>
 
             <Box className={styles["card-group"]}>
