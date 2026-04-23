@@ -1,7 +1,7 @@
 import { Box, Typography, IconButton, Collapse, Dialog, DialogContent } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { CloseFullscreen } from "@mui/icons-material";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     LineChart, Line, BarChart, Bar,
     XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -20,13 +20,23 @@ interface Props {
 type StatKey = "current" | "best" | "completion" | "missed" | "consistency";
 
 export default function Overview({ taskId, days }: Props) {
+    if ( taskId === null ) {
+        return null;
+    }
+
     const entries = useAppSelector((state) => state.entries.entries);
     const [expanded, setExpanded] = useState<StatKey | null>(null);
     const [fullscreen, setFullscreen] = useState(false);
 
     // All dates this task has ever been tracked (completed or not)
     // We derive total tracked days from the earliest entry to today
-    const allTaskKeys = Object.keys(entries).filter((k) => k.startsWith(`${taskId}-`));
+    const allTaskKeys = useMemo(() => {
+        return Object.keys(entries).filter((k) => k.startsWith(`${taskId}-`));
+    }, [taskId, entries]);
+
+    if ( allTaskKeys.length === 0 ) {
+        return <Typography> No data available for this task. </Typography>
+    }
     const allCompletedDates = allTaskKeys.filter((k) => entries[k]).map((k) => k.replace(`${taskId}-`, "")).sort();
 
     // Total tracked days = from first ever entry date to today
@@ -88,6 +98,11 @@ export default function Overview({ taskId, days }: Props) {
         { key: "consistency", label: "🎯 Consistency", value: `${consistency}%` },
     ];
 
+    const parseDate = (str: string) => {
+        const [y, m, day] = str.split("-").map(Number);
+        return new Date(y, m-1, day);
+    };
+
     const chartContent = (height: number) => (<>
         {expanded === "current" && (() => {
             const allDates = Object.keys(entries)
@@ -103,11 +118,11 @@ export default function Overview({ taskId, days }: Props) {
                     cur = 1;
                 } else {
                     const prev = new Date(allDates[i - 1]);
-                    const curr = new Date(dateStr);
+                    const curr = parseDate(dateStr);
                     const diff = (curr.getTime() - prev.getTime()) / 86400000;
                     cur = diff === 1 ? cur + 1 : 1;
                 }
-                const d = new Date(dateStr);
+                const d = parseDate(dateStr);
                 const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }).slice(0, 6);
                 currentData.push({ label, streak: cur });
             });
@@ -140,12 +155,12 @@ export default function Overview({ taskId, days }: Props) {
                     cur = 1;
                 } else {
                     const prev = new Date(allDates[i - 1]);
-                    const curr = new Date(dateStr);
+                    const curr = parseDate(dateStr);
                     const diff = (curr.getTime() - prev.getTime()) / 86400000;
                     cur = diff === 1 ? cur + 1 : 1;
                 }
                 best = Math.max(best, cur);
-                const d = new Date(dateStr);
+                const d = parseDate(dateStr);
                 const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }).slice(0, 6);
                 bestData.push({ label, best });
             });
@@ -168,7 +183,7 @@ export default function Overview({ taskId, days }: Props) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis dataKey="label" tick={{ fill: "#aaa", fontSize: 11 }} interval="preserveStartEnd" />
                     <YAxis unit="%" tick={{ fill: "#aaa", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "#1e1e1e", border: "none" }} formatter={(v) => `${v}%`} />
+                    <Tooltip contentStyle={{ background: "#1e1e1e", border: "none" }} formatter={(v) => [`${v}%`, "Completion Rate"]} />
                     <Line type="natural" dataKey="pct" stroke="#4caf50" strokeWidth={2} dot={true} />
                 </LineChart>
             </ChartWrapper>
@@ -179,8 +194,8 @@ export default function Overview({ taskId, days }: Props) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis dataKey="label" tick={{ fill: "#aaa", fontSize: 11 }} />
                     <YAxis tick={{ fill: "#aaa", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "#1e1e1e", border: "none" }} />
-                    <Line type="natural" dataKey="missed" stroke="#f44336" strokeWidth={2} dot={true} />
+                    <Tooltip contentStyle={{ background: "#1e1e1e", border: "none" }} formatter={(v) => [v, "Day Missed"]} />
+                    <Line type="monotone" dataKey="missed" stroke="#f44336" strokeWidth={2} dot={true} />
                 </LineChart>
             </ChartWrapper>
         )}
@@ -214,13 +229,14 @@ export default function Overview({ taskId, days }: Props) {
                 </Box>
 
                 {/* Stats column */}
-                <Box sx={{ display: "flex", flexDirection: expanded ? "column" : "row" , gap: 2, flexShrink: 0 }}>
+                <Box sx={{ display: "flex", flexDirection: expanded ? "column" : "row", gap: 2, flexShrink: 0 }}>
                     {stats.map(({ key, label, value }) => (
                         <StatCard
                             key={key}
                             label={label}
                             value={value}
                             active={expanded === key}
+                            collapsed={expanded !== null}
                             onClick={() => toggle(key)}
                         />
                     ))}
@@ -228,7 +244,7 @@ export default function Overview({ taskId, days }: Props) {
 
                 {/* Inline expandable chart */}
                 <Collapse in={expanded !== null} unmountOnExit orientation="horizontal"
-                    sx={{ flex: expanded ? 1 : 0 }}
+                    sx={{ flex: expanded ? 1 : 0, transition: "all 0.3s ease", }}
                 >
                     <Box
                         sx={{
@@ -236,6 +252,7 @@ export default function Overview({ taskId, days }: Props) {
                             borderRadius: "12px",
                             p: 3,
                             position: "relative",
+                            // width: "100%",
                             width: "700px",
                         }}
                     >
@@ -292,26 +309,45 @@ export default function Overview({ taskId, days }: Props) {
     );
 }
 
-function StatCard({ label, value, active, onClick }: {
-    label: string; value: any; active: boolean; onClick: () => void;
+function StatCard({ label, value, active, collapsed, onClick }: {
+    label: string; value: any; active: boolean; collapsed: boolean; onClick: () => void;
 }) {
     return (
         <Box
             onClick={onClick}
             sx={{
                 textAlign: "center",
-                padding: "10px 20px",
+                padding: collapsed ? "8px 12px" : "10px 20px",
                 background: active ? "#2a2a4a" : "#1e1e1e",
                 borderRadius: "8px",
-                minWidth: 100,
+                minWidth: collapsed ? 80 : 100,
+                maxWidth: collapsed ? 120 : 200,
                 cursor: "pointer",
                 border: active ? "1px solid #7c4dff" : "1px solid transparent",
-                transition: "all 0.2s",
+                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                overflow: "hidden",
                 "&:hover": { background: "#2a2a3a", border: "1px solid #555" },
             }}
         >
-            <Typography variant="body2">{label}</Typography>
-            <Typography variant="h6">{value}</Typography>
+            <Typography
+                variant="body2"
+                sx={{
+                    fontSize: collapsed ? "0.65rem" : "0.75rem",
+                    transition: "font-size 0.4s ease",
+                    whiteSpace: "nowrap",
+                }}
+            >
+                {label}
+            </Typography>
+            <Typography
+                variant="h6"
+                sx={{
+                    fontSize: collapsed ? "0.9rem" : "1.25rem",
+                    transition: "font-size 0.4s ease",
+                }}
+            >
+                {value}
+            </Typography>
         </Box>
     );
 }
